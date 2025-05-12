@@ -29,7 +29,7 @@ public class PaymentController {
     public ResponseEntity<CreatePaymentResponse> createPayments(@RequestBody CreatePaymentRequest createPaymentRequest){
         log.info("Invoked createPayments in Controller ||CreatePaymentRequest:" +createPaymentRequest);
 
-
+         //TODO hardcoded
         CreatePaymentResponse createPaymentResponse=new CreatePaymentResponse();
         createPaymentResponse.setTxnReference("TXN00021");
 
@@ -37,15 +37,14 @@ public class PaymentController {
         log.info("Converting pojo to dto ||Request: "+request);
         paymentService.createPayments(request);
 
-
-
-
         return new ResponseEntity<>(createPaymentResponse, HttpStatus.CREATED);
     }
 
     @PostMapping("/{txnReference}/initiate")
     public ResponseEntity<String> initiatePayments(@PathVariable String txnReference){
         log.info("Invoked initiatePayment in controller ||txnReference:" +txnReference);
+        paymentService.initiatePayments();
+
 
         return new ResponseEntity<>("Returning from Initiate",HttpStatus.OK);
     }
