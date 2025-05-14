@@ -4,7 +4,7 @@ import com.hulkhiretech.payments.dto.TransactionDTO;
 
 public interface PaymentServiceInterface {
 
-    public String createPayments(TransactionDTO txn);
-    public String initiatePayments();
+    public TransactionDTO createPayments(TransactionDTO txn);
+    public String initiatePayments(String txnRefs);
 
 }

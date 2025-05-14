@@ -8,12 +8,14 @@ import com.hulkhiretech.payments.Service.Interface.PaymentServiceInterface;
 import com.hulkhiretech.payments.Service.Interface.PaymentStatusService;
 import com.hulkhiretech.payments.StripeProviderPojo.CreatePaymentDto;
 import com.hulkhiretech.payments.StripeProviderPojo.LineItems;
+import com.hulkhiretech.payments.dao.TransactionDao;
 import com.hulkhiretech.payments.dto.TransactionDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -27,23 +29,24 @@ public class PaymentServiceImpl implements PaymentServiceInterface {
    private final PaymentStatusService paymentStatusService;
    private final HttpServiceEngine httpServiceEngine;
    private static Gson gson;
+   private  final TransactionDao transactionDao;
 
 
 
     @Override
-    public String createPayments(TransactionDTO txn) {
+    public TransactionDTO createPayments(TransactionDTO txn) {
         log.info("Invoked createPayments ");
         txn.setTxnStatus(TransactionStatusEnum.CREATED.getName());
         String TxnRef =generateTxnReference();
         txn.setTxnReference(TxnRef);
-         log.info("going to call processStatus :{}",txn);
+         log.info("going to call processStatus with txn:{}",txn);
 
-         paymentStatusService.processStatus(txn);
+        TransactionDTO response= paymentStatusService.processStatus(txn);
+        log.info("Got response back from paymentStatusService :{}",response);
         // update DB PaymentStatus as CREATED
         //generate and return txnReference Id
 
-
-        return "Successfully return from createPayment from service";
+       return response;
     }
 
     private String generateTxnReference() {
@@ -51,31 +54,31 @@ public class PaymentServiceImpl implements PaymentServiceInterface {
     }
 
     @Override
-    public String initiatePayments(){
+    public String initiatePayments(String txnRefs){
         log.info("InitiatePayments is Invoked");
+
+        //make DB call to get txnDTO by using txnRefs
+          TransactionDTO txnRes=transactionDao.getTransactionByTxnRef(txnRefs);
+          log.info("Got txnRes from getTransactionByRef :{}",txnRes);
         // update DB PaymentStatus as INITIATED
-        //TODO valid object
-        TransactionDTO txn=new TransactionDTO();
-        txn.setTxnStatus(TransactionStatusEnum.INITIATED.getName());
-        paymentStatusService.processStatus(txn);
+
+        txnRes.setTxnStatus(TransactionStatusEnum.INITIATED.getName());
+        paymentStatusService.processStatus(txnRes);
 
         //Call provider service get response means make RestClint request;
 
         HttpRequest httpRequest = getHttpRequest();
-        httpServiceEngine.makeHttpCall(httpRequest);
+       ResponseEntity<?> httpResponse= httpServiceEngine.makeHttpCall(httpRequest);
 
 
         // TODO if success update DB as PENDING and return necessary object
-        txn.setTxnStatus(TransactionStatusEnum.PENDING.getName());
-        txn.setProviderReference("From Stripe");
-        paymentStatusService.processStatus(txn);
 
         // TODO if Failure update DB as FAILURE and retry/return Message
-        txn.setTxnStatus(TransactionStatusEnum.FAILED.getName());
-        txn.setErrorCode("");
-        txn.setErrorMessage("Unable to call stripe provider");
-        txn.setProviderReference("From Stripe");
-        paymentStatusService.processStatus(txn);
+//        txn.setTxnStatus(TransactionStatusEnum.FAILED.getName());
+//        txn.setErrorCode("");
+//        txn.setErrorMessage("Unable to call stripe provider");
+//        txn.setProviderReference("From Stripe");
+//        paymentStatusService.processStatus(txn);
 
         return"";
     }
