@@ -1,5 +1,7 @@
 package com.hulkhiretech.payments.Http;
 
+import com.hulkhiretech.payments.Constant.ErrorCodeEnum;
+import com.hulkhiretech.payments.Exception.ProccessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +45,12 @@ public class HttpServiceEngine {
                     e.getStatusCode().equals(HttpStatus.SERVICE_UNAVAILABLE)) {
 
                 log.error("Received error from 5xx statusCode :{}", e.getStatusCode());
-                throw  new RuntimeException("SOme custom error logic");
+
+                throw  new ProccessingException(
+                        ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PSP.getErrorCode(),
+                        ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PSP.getErrorMessage(),
+                        HttpStatus.valueOf(e.getStatusCode().value())
+                );
             }
 
             log.info("Returning getResponseBodyAsString :{}", e.getResponseBodyAsString());
@@ -53,7 +60,11 @@ public class HttpServiceEngine {
 
         } catch (Exception e) {
             log.error("Generic Exception Happened :{}",e);
-            throw new RuntimeException("some custom exception handling");
+            throw new ProccessingException(
+                    ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PSP.getErrorCode(),
+                    ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PSP.getErrorMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
 
         }
 

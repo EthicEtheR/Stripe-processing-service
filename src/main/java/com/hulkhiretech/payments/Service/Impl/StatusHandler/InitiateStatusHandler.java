@@ -14,8 +14,9 @@ public class InitiateStatusHandler implements TransactionStatusHandler {
     private final TransactionDao transactionDao;
     @Override
     public TransactionDTO processStatus(TransactionDTO txnDto) {
-        log.info("Processing processStatus in InitiateStatusHandler");
-        transactionDao.initiateTransaction(txnDto);
-        return null;
+        log.info("Processing INITIATED in InitiateStatusHandler");
+        transactionDao.updateTransactionStatusDetails(txnDto);
+        log.info("Updated txn in DB|| txnDto :{}",txnDto);
+        return txnDto;
     }
 }

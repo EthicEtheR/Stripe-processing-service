@@ -87,22 +87,24 @@ public class TransactionDaoImpl implements TransactionDao {
     }
 
     @Override
-    public TransactionDTO initiateTransaction(TransactionDTO txnDTO) {
+    public TransactionDTO updateTransactionStatusDetails(TransactionDTO txnDTO) {
+        log.info("processing updateTransactionStatusDetails  ");
 
-        int id=txnDTO.getId();
+        String sql = "UPDATE payments.`Transaction` SET " +
+                "txnStatusId = :txnStatusId, " +
+                "providerReference = :providerReference, " +
+                "errorCode = :errorCode, " +
+                "errorMessage = :errorMessage " +
+                "WHERE txnReference = :txnReference";
 
-        String sql = "UPDATE `Transaction` " +
-                "SET txnStatusId = :toStatusId " +
-                "WHERE id = :id AND txnStatusId = :fromStatusId";
 
-        MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("id", id);
-        params.addValue("fromStatusId", TransactionStatusEnum.CREATED.getId());
-        params.addValue("toStatusId", TransactionStatusEnum.INITIATED.getId());
 
-        int res= jdbcTemplate.update(sql, params);
-        log.info("Status Updated in DB initiatedTransaction by using Id :{}",res);
+        TransactionEntity transactionEntity=mapper.map(txnDTO,TransactionEntity.class);
+        SqlParameterSource params=new BeanPropertySqlParameterSource(transactionEntity);
 
-        return null;
+        jdbcTemplate.update(sql,params);
+        log.info("Txn details updated in DB ||txnDTO :{}",txnDTO);
+
+        return txnDTO;
     }
 }

@@ -1,7 +1,9 @@
 package com.hulkhiretech.payments.Service.Impl;
 
 import com.google.gson.Gson;
+import com.hulkhiretech.payments.Constant.ErrorCodeEnum;
 import com.hulkhiretech.payments.Constant.TransactionStatusEnum;
+import com.hulkhiretech.payments.Exception.ProccessingException;
 import com.hulkhiretech.payments.Http.HttpRequest;
 import com.hulkhiretech.payments.Http.HttpServiceEngine;
 import com.hulkhiretech.payments.Service.Interface.PaymentServiceInterface;
@@ -9,13 +11,15 @@ import com.hulkhiretech.payments.Service.Interface.PaymentStatusService;
 import com.hulkhiretech.payments.StripeProviderPojo.CreatePaymentDto;
 import com.hulkhiretech.payments.StripeProviderPojo.LineItems;
 import com.hulkhiretech.payments.dao.TransactionDao;
+import com.hulkhiretech.payments.dto.InitiatePaymentDTO;
+import com.hulkhiretech.payments.dto.PaymentResDTO;
 import com.hulkhiretech.payments.dto.TransactionDTO;
+import com.hulkhiretech.payments.pojo.InitiatePaymentReq;
+import com.hulkhiretech.payments.pojo.PaymentRes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.modelmapper.ModelMapper;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -26,10 +30,13 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentServiceInterface {
-   private final PaymentStatusService paymentStatusService;
+    public static final String STRIPE_URL = "http://localhost:8083/v1/payments";
+    private final PaymentStatusService paymentStatusService;
    private final HttpServiceEngine httpServiceEngine;
    private static Gson gson;
    private  final TransactionDao transactionDao;
+   private final ModelMapper mapper;
+    Gson gsonUtils = new Gson();
 
 
 
@@ -54,69 +61,81 @@ public class PaymentServiceImpl implements PaymentServiceInterface {
     }
 
     @Override
-    public String initiatePayments(String txnRefs){
+
+    public String initiatePayments(String txnRefs, InitiatePaymentReq paymentReq){
         log.info("InitiatePayments is Invoked");
+        log.info("Testing for body which came from postman PaymentReq :{}",paymentReq);
 
         //make DB call to get txnDTO by using txnRefs
-          TransactionDTO txnRes=transactionDao.getTransactionByTxnRef(txnRefs);
-          log.info("Got txnRes from getTransactionByRef :{}",txnRes);
+          TransactionDTO txnResDTO=transactionDao.getTransactionByTxnRef(txnRefs);
+          log.info("Got txnResDTO from getTransactionByRef :{}",txnResDTO);
         // update DB PaymentStatus as INITIATED
 
-        txnRes.setTxnStatus(TransactionStatusEnum.INITIATED.getName());
-        paymentStatusService.processStatus(txnRes);
+        txnResDTO.setTxnStatus(TransactionStatusEnum.INITIATED.getName());
+
+        paymentStatusService.processStatus(txnResDTO);
 
         //Call provider service get response means make RestClint request;
-
-        HttpRequest httpRequest = getHttpRequest();
-       ResponseEntity<?> httpResponse= httpServiceEngine.makeHttpCall(httpRequest);
-
-
-        // TODO if success update DB as PENDING and return necessary object
-
-        // TODO if Failure update DB as FAILURE and retry/return Message
-//        txn.setTxnStatus(TransactionStatusEnum.FAILED.getName());
-//        txn.setErrorCode("");
-//        txn.setErrorMessage("Unable to call stripe provider");
-//        txn.setProviderReference("From Stripe");
-//        paymentStatusService.processStatus(txn);
-
-        return"";
-    }
-
-    private static HttpRequest getHttpRequest() {
-        LineItems item1 = new LineItems();
-        item1.setQuantity(2);
-        item1.setCurrency("USD");
-        item1.setProductName("Product A");
-        item1.setUnitAmount(100);
-
-        LineItems item2 = new LineItems();
-        item2.setQuantity(1);
-        item2.setCurrency("USD");
-        item2.setProductName("Product B");
-        item2.setUnitAmount(200);
-
-        // Add items to list
-        List<LineItems> lineItemsList = new ArrayList<>();
-        lineItemsList.add(item1);
-        lineItemsList.add(item2);
-
-        // Create the main DTO and set values
-        CreatePaymentDto paymentDto = new CreatePaymentDto();
-        paymentDto.setSuccessUrl("https://example.com/success");
-        paymentDto.setCancelUrl("https://example.com/cancel");
-        paymentDto.setLineItems(lineItemsList);
-
-
+        InitiatePaymentDTO paymentDTO=mapper.map(paymentReq,InitiatePaymentDTO.class);
         HttpHeaders httpHeaders=new HttpHeaders();
         httpHeaders.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         HttpRequest httpRequest= HttpRequest.builder()
                 .method(HttpMethod.POST)
-                .url("http://localhost:8083/v1/payments")
+                .url(STRIPE_URL)
                 .Headers(httpHeaders)
-                .requestBody(paymentDto)
+                .requestBody(paymentDTO)
                 .build();
 
-        return httpRequest;
+
+        try {
+            ResponseEntity<String> httpResponse= httpServiceEngine.makeHttpCall(httpRequest);
+            PaymentResDTO handledResponse= proccessReponse(httpResponse);
+
+            txnResDTO.setTxnStatus(TransactionStatusEnum.PENDING.getName());
+            txnResDTO.setProviderReference(handledResponse.getId());
+            txnResDTO.setUrl(handledResponse.getUrl());
+            paymentStatusService.processStatus(txnResDTO);
+
+        } catch (ProccessingException e) {
+            txnResDTO.setTxnStatus(TransactionStatusEnum.FAILED.getName());
+            txnResDTO.setErrorCode(e.getErrorCode());
+            txnResDTO.setErrorMessage(e.getErrorMessage());
+            //TODO SET providerREf
+            txnResDTO.setProviderReference(txnResDTO.getProviderReference());
+            paymentStatusService.processStatus(txnResDTO);
+
+            throw new RuntimeException(e);
+        }
+
+
+
+        return"";
     }
+
+    private PaymentResDTO proccessReponse(ResponseEntity<String> httpResponse) {
+        if(httpResponse.getStatusCode().isSameCodeAs(HttpStatus.CREATED)){
+            log.info("Got HttpStatus as CREATED");
+            String HttpRes=httpResponse.getBody();
+            Gson gson=new Gson();
+            PaymentRes paymentRes=gson.fromJson(HttpRes,PaymentRes.class);
+
+            assert paymentRes != null;
+            if(paymentRes!=null & paymentRes.getUrl()!=null){
+             PaymentResDTO responseDTO=mapper.map(paymentRes,PaymentResDTO.class);
+
+              log.info("Got valid response from StripeProvider");
+              return responseDTO;
+          }
+          log.info("Got correct HttpStatus but not Url ");
+
+
+
+        }
+
+        return  null;
+
+
+    }
+
+
 }

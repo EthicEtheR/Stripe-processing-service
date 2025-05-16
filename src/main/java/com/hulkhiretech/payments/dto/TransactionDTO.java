@@ -20,4 +20,5 @@ public class TransactionDTO {
     private String errorCode;
     private String errorMessage;
     private int retryCount;
+    private String url;
 }
