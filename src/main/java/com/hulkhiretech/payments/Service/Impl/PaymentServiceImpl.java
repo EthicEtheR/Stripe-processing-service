@@ -8,13 +8,11 @@ import com.hulkhiretech.payments.Http.HttpRequest;
 import com.hulkhiretech.payments.Http.HttpServiceEngine;
 import com.hulkhiretech.payments.Service.Interface.PaymentServiceInterface;
 import com.hulkhiretech.payments.Service.Interface.PaymentStatusService;
-import com.hulkhiretech.payments.StripeProviderPojo.CreatePaymentDto;
-import com.hulkhiretech.payments.StripeProviderPojo.LineItems;
 import com.hulkhiretech.payments.dao.TransactionDao;
 import com.hulkhiretech.payments.dto.InitiatePaymentDTO;
 import com.hulkhiretech.payments.dto.PaymentResDTO;
 import com.hulkhiretech.payments.dto.TransactionDTO;
-import com.hulkhiretech.payments.pojo.InitiatePaymentReq;
+import com.hulkhiretech.payments.pojo.ErrorRes;
 import com.hulkhiretech.payments.pojo.PaymentRes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +20,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -36,7 +32,6 @@ public class PaymentServiceImpl implements PaymentServiceInterface {
    private static Gson gson;
    private  final TransactionDao transactionDao;
    private final ModelMapper mapper;
-    Gson gsonUtils = new Gson();
 
 
 
@@ -62,13 +57,21 @@ public class PaymentServiceImpl implements PaymentServiceInterface {
 
     @Override
 
-    public String initiatePayments(String txnRefs, InitiatePaymentReq paymentReq){
+    public TransactionDTO initiatePayments(String txnRefs, InitiatePaymentDTO paymentReqDTO){
         log.info("InitiatePayments is Invoked");
-        log.info("Testing for body which came from postman PaymentReq :{}",paymentReq);
+        log.info("Testing for body which came from postman PaymentReq :{}",paymentReqDTO);
 
         //make DB call to get txnDTO by using txnRefs
           TransactionDTO txnResDTO=transactionDao.getTransactionByTxnRef(txnRefs);
           log.info("Got txnResDTO from getTransactionByRef :{}",txnResDTO);
+
+          if(txnResDTO==null){
+              throw new ProccessingException(
+                      ErrorCodeEnum.INVALID_TXN_REFERENCE.getErrorCode(),
+                      ErrorCodeEnum.INVALID_TXN_REFERENCE.getErrorMessage(),
+                      HttpStatus.BAD_REQUEST);
+          }
+
         // update DB PaymentStatus as INITIATED
 
         txnResDTO.setTxnStatus(TransactionStatusEnum.INITIATED.getName());
@@ -76,51 +79,66 @@ public class PaymentServiceImpl implements PaymentServiceInterface {
         paymentStatusService.processStatus(txnResDTO);
 
         //Call provider service get response means make RestClint request;
-        InitiatePaymentDTO paymentDTO=mapper.map(paymentReq,InitiatePaymentDTO.class);
         HttpHeaders httpHeaders=new HttpHeaders();
         httpHeaders.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         HttpRequest httpRequest= HttpRequest.builder()
                 .method(HttpMethod.POST)
                 .url(STRIPE_URL)
                 .Headers(httpHeaders)
-                .requestBody(paymentDTO)
+                .requestBody(paymentReqDTO)
                 .build();
 
 
         try {
             ResponseEntity<String> httpResponse= httpServiceEngine.makeHttpCall(httpRequest);
-            PaymentResDTO handledResponse= proccessReponse(httpResponse);
+            PaymentResDTO handledResponse= processResponse(httpResponse);
 
             txnResDTO.setTxnStatus(TransactionStatusEnum.PENDING.getName());
             txnResDTO.setProviderReference(handledResponse.getId());
             txnResDTO.setUrl(handledResponse.getUrl());
             paymentStatusService.processStatus(txnResDTO);
+            log.info("DtO after calling processStatus as PENDING :{}",txnResDTO);
 
         } catch (ProccessingException e) {
             txnResDTO.setTxnStatus(TransactionStatusEnum.FAILED.getName());
             txnResDTO.setErrorCode(e.getErrorCode());
             txnResDTO.setErrorMessage(e.getErrorMessage());
-            //TODO SET providerREf
+            // SET providerREf
             txnResDTO.setProviderReference(txnResDTO.getProviderReference());
             paymentStatusService.processStatus(txnResDTO);
 
-            throw new RuntimeException(e);
+            //TODO clarify this part
+            if(e.getErrorCode().equals("30001")){
+                log.error("Error at Stripe Side ," +
+                        "throwing our custom message and errorCode:{}",e);
+                throw new ProccessingException(
+                        ErrorCodeEnum.ERROR_AT_STRIPE_PSP.getErrorCode(),
+                        ErrorCodeEnum.ERROR_AT_STRIPE_PSP.getErrorMessage(),
+                        e.getHttpStatus());
+            }
+
+            throw new ProccessingException(
+                    ErrorCodeEnum.GENERIC_ERROR.getErrorCode(),
+                    ErrorCodeEnum.GENERIC_ERROR.getErrorMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
 
 
-        return"";
+        return txnResDTO;
     }
 
-    private PaymentResDTO proccessReponse(ResponseEntity<String> httpResponse) {
+
+
+
+    private PaymentResDTO processResponse(ResponseEntity<String> httpResponse) {
         if(httpResponse.getStatusCode().isSameCodeAs(HttpStatus.CREATED)){
             log.info("Got HttpStatus as CREATED");
-            String HttpRes=httpResponse.getBody();
-            Gson gson=new Gson();
-            PaymentRes paymentRes=gson.fromJson(HttpRes,PaymentRes.class);
 
-            assert paymentRes != null;
-            if(paymentRes!=null & paymentRes.getUrl()!=null){
+            Gson gson=new Gson();
+            PaymentRes paymentRes=gson.fromJson(httpResponse.getBody(),PaymentRes.class);
+
+            if(paymentRes!=null &&  paymentRes.getUrl()!=null){
              PaymentResDTO responseDTO=mapper.map(paymentRes,PaymentResDTO.class);
 
               log.info("Got valid response from StripeProvider");
@@ -131,8 +149,19 @@ public class PaymentServiceImpl implements PaymentServiceInterface {
 
 
         }
+        ErrorRes errorRes=gson.fromJson(httpResponse.getBody(),ErrorRes.class);
+        log.info("Converted Error response :{}",errorRes);
 
-        return  null;
+        if(errorRes!=null && errorRes.getErrorCode()!=null){
+            throw new ProccessingException(errorRes.getErrorCode(),
+                    errorRes.getErrorMessage(),
+                    HttpStatus.valueOf(httpResponse.getStatusCode().value()));
+        }
+
+        throw new ProccessingException(
+                ErrorCodeEnum.GENERIC_ERROR.getErrorCode(),
+                ErrorCodeEnum.GENERIC_ERROR.getErrorMessage(),
+                HttpStatus.INTERNAL_SERVER_ERROR);
 
 
     }

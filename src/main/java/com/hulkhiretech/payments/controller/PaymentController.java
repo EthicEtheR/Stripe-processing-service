@@ -1,9 +1,11 @@
 package com.hulkhiretech.payments.controller;
 
 import com.hulkhiretech.payments.Service.Interface.PaymentServiceInterface;
+import com.hulkhiretech.payments.dto.InitiatePaymentDTO;
 import com.hulkhiretech.payments.dto.TransactionDTO;
 import com.hulkhiretech.payments.pojo.CreatePaymentRequest;
 import com.hulkhiretech.payments.pojo.CreatePaymentResponse;
+import com.hulkhiretech.payments.pojo.InitiPaymentRes;
 import com.hulkhiretech.payments.pojo.InitiatePaymentReq;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -43,15 +45,26 @@ public class PaymentController {
         return new ResponseEntity<>(createPaymentResponse, HttpStatus.CREATED);
     }
 
+
+
     @PostMapping("/{txnReference}/initiate")
-    public ResponseEntity<String> initiatePayments(@PathVariable String txnReference,
+    public ResponseEntity<InitiPaymentRes> initiatePayments(@PathVariable String txnReference,
                                                    @RequestBody InitiatePaymentReq initiatePaymentReq){
         log.info("Invoked initiatePayment in controller ||txnReference:" +txnReference);
 
-        paymentService.initiatePayments(txnReference,initiatePaymentReq);
+        InitiatePaymentDTO paymentDTO=mapper.map(initiatePaymentReq,InitiatePaymentDTO.class);
 
 
-        return new ResponseEntity<>("Returning from Initiate",HttpStatus.OK);
+        TransactionDTO responseDTO=paymentService.initiatePayments(txnReference,paymentDTO);
+        log.info("Got responseDTO in Initiated controller :{}",responseDTO);
+
+        InitiPaymentRes response=InitiPaymentRes.builder()
+                .paymentStatus(responseDTO.getTxnStatus())
+                .id(responseDTO.getProviderReference())
+                .url(responseDTO.getUrl()).build();
+
+
+        return new ResponseEntity<>(response,HttpStatus.OK);
     }
 
 }

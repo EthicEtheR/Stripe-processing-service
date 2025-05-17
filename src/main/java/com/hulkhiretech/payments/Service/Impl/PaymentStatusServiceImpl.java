@@ -31,14 +31,14 @@ public class PaymentStatusServiceImpl implements PaymentStatusService {
         }
         TransactionStatusHandler handler =statusFactory.getHandler(statusEnum);
         if(handler==null){
-            log.error("Invaild handler :{}",handler);
+            log.error("Invalid handler :{}",handler);
 
             throw new ProccessingException(ErrorCodeEnum.NO_STATUS_HANDLER_FOUND.getErrorCode(),
                     ErrorCodeEnum.NO_STATUS_HANDLER_FOUND.getErrorMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR);
        }
         log.info("Got valid handler through factory: {}",handler);
-        handler.processStatus(txnDto);
+          handler.processStatus(txnDto);
 
         return txnDto;
     }

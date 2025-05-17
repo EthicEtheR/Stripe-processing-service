@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum ErrorCodeEnum {
     GENERIC_ERROR("20000","Unable to process the request,Please try again later"),
-    UNABLE_TO_CONNECT_TO_STRIPE_PSP("20001","Unable to connect StripeProvider"),
+    UNABLE_TO_CONNECT_TO_STRIPE_PS("20001","Unable to connect StripeProvider"),
     ERROR_AT_STRIPE_PSP("20002","Failed process at Stripe PSP,Please try again later"),
     INVALID_TXN_REFERENCE("20003","Invalid txn reference ,No transaction found"),
     INVALID_PAYMENT_STATUS("20004","Invalid payment status . No configuration found"),

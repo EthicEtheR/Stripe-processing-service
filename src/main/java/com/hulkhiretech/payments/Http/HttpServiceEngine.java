@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 @Component
@@ -39,7 +40,7 @@ public class HttpServiceEngine {
 
 
         } catch (HttpClientErrorException | HttpServerErrorException e) {
-            log.error("HttpErrorException occurred");
+            log.error("HttpErrorException occurred :"+e);
 
             if (e.getStatusCode().equals(HttpStatus.GATEWAY_TIMEOUT) ||
                     e.getStatusCode().equals(HttpStatus.SERVICE_UNAVAILABLE)) {
@@ -47,8 +48,8 @@ public class HttpServiceEngine {
                 log.error("Received error from 5xx statusCode :{}", e.getStatusCode());
 
                 throw  new ProccessingException(
-                        ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PSP.getErrorCode(),
-                        ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PSP.getErrorMessage(),
+                        ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PS.getErrorCode(),
+                        ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PS.getErrorMessage(),
                         HttpStatus.valueOf(e.getStatusCode().value())
                 );
             }
@@ -58,11 +59,19 @@ public class HttpServiceEngine {
                     .body(e.getResponseBodyAsString());
 
 
-        } catch (Exception e) {
-            log.error("Generic Exception Happened :{}",e);
+        } catch (ResourceAccessException e) {
+            log.error("Connection error: unable to reach server. {}", e.getMessage());
             throw new ProccessingException(
-                    ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PSP.getErrorCode(),
-                    ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PSP.getErrorMessage(),
+                    ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PS.getErrorCode(),
+                    ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PS.getErrorMessage(),
+                    HttpStatus.SERVICE_UNAVAILABLE
+            );
+
+        } catch (Exception e) {
+            log.error("Generic Exception Happened :"+e);
+            throw new ProccessingException(
+                    ErrorCodeEnum.GENERIC_ERROR.getErrorCode(),
+                    ErrorCodeEnum.GENERIC_ERROR.getErrorMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
 

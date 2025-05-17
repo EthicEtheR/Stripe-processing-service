@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorRes> handleGenericException(Exception ex) {
-        log.error("Generic exception handle :{}",ex);
+        log.error("Generic exception handle :"+ex);
         ErrorRes errorRes= new ErrorRes();
 
         errorRes.setErrorCode(ErrorCodeEnum.GENERIC_ERROR.getErrorCode());
