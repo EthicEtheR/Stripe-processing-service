@@ -9,7 +9,8 @@ public enum ErrorCodeEnum {
     ERROR_AT_STRIPE_PSP("20002","Failed process at Stripe PSP,Please try again later"),
     INVALID_TXN_REFERENCE("20003","Invalid txn reference ,No transaction found"),
     INVALID_PAYMENT_STATUS("20004","Invalid payment status . No configuration found"),
-    NO_STATUS_HANDLER_FOUND("20005","Transaction status handler not found");
+    NO_STATUS_HANDLER_FOUND("20005","Transaction status handler not found"),
+    CHECKOUT_SESSION_PAYMENT_FAILED("20006","Unable to make payment successful on hosted page");
 
     private String errorCode;
     private String errorMessage;

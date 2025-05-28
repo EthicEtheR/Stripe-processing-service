@@ -2,6 +2,7 @@ package com.hulkhiretech.payments.Http;
 
 import com.hulkhiretech.payments.Constant.ErrorCodeEnum;
 import com.hulkhiretech.payments.Exception.ProccessingException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,8 +24,8 @@ public class HttpServiceEngine {
         this.restClient=restClient.build();
 
     }
-
-
+    @CircuitBreaker(name = "payment-processing-service",
+            fallbackMethod = "fallbackProcessPayment")
     public ResponseEntity<String> makeHttpCall(HttpRequest httpRequest){
         log.info("Into HttpServiceEngine");
 
@@ -67,6 +68,8 @@ public class HttpServiceEngine {
                     HttpStatus.SERVICE_UNAVAILABLE
             );
 
+
+
         } catch (Exception e) {
             log.error("Generic Exception Happened :"+e);
             throw new ProccessingException(
@@ -80,4 +83,13 @@ public class HttpServiceEngine {
 
 
     }
+    public ResponseEntity<String> fallbackProcessPayment(HttpRequest httpRequest, Throwable t) {
+        // Handle fallback logic here
+        log.error("Fallback method invoked due to exception:" + t.getMessage());
+        throw new ProccessingException(
+                ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PS.getErrorCode(),
+                ErrorCodeEnum.UNABLE_TO_CONNECT_TO_STRIPE_PS.getErrorMessage(),
+                HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
 }

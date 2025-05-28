@@ -6,4 +6,5 @@ public interface TransactionDao {
     public TransactionDTO createTransaction(TransactionDTO txnDto);
     public TransactionDTO getTransactionByTxnRef(String txnRefs);
     public TransactionDTO updateTransactionStatusDetails(TransactionDTO txnDTO);
+    TransactionDTO getTransactionByProviderRef(String providerRef);
 }

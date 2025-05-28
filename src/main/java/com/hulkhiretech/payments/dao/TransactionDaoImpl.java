@@ -107,4 +107,28 @@ public class TransactionDaoImpl implements TransactionDao {
 
         return txnDTO;
     }
+
+    @Override
+    public TransactionDTO getTransactionByProviderRef(String providerRef) {
+        log.info("Going to JDBC Call to getTransaction by txnRef :{}",providerRef);
+
+        String sql = "SELECT * FROM `Transaction` WHERE providerReference = :providerReference";
+
+        MapSqlParameterSource paramSource = new MapSqlParameterSource();
+        paramSource.addValue("providerReference", providerRef);
+
+        try {
+            TransactionEntity transactionEntity= jdbcTemplate.queryForObject(sql, paramSource,
+                    new BeanPropertyRowMapper<>(TransactionEntity.class));
+            log.info("got TransactionEntity back from DB :{}",transactionEntity);
+
+            return mapper.map(transactionEntity,TransactionDTO.class);
+
+        } catch (EmptyResultDataAccessException e) {
+            log.warn("No transaction found with providerReference: {}", providerRef);
+            return null;
+        }
+
+
+    }
 }
