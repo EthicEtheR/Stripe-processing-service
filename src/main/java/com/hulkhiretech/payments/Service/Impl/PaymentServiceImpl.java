@@ -29,7 +29,7 @@ public class PaymentServiceImpl implements PaymentServiceInterface {
     public static final String STRIPE_URL = "http://localhost:8083/v1/payments";
     private final PaymentStatusService paymentStatusService;
    private final HttpServiceEngine httpServiceEngine;
-   private static Gson gson;
+   private final Gson gson;
    private  final TransactionDao transactionDao;
    private final ModelMapper mapper;
 
@@ -130,12 +130,12 @@ public class PaymentServiceImpl implements PaymentServiceInterface {
 
 
 
-
+    //public Gson gson=new Gson();
     private PaymentResDTO processResponse(ResponseEntity<String> httpResponse) {
         if(httpResponse.getStatusCode().isSameCodeAs(HttpStatus.CREATED)){
             log.info("Got HttpStatus as CREATED");
 
-            Gson gson=new Gson();
+
             PaymentRes paymentRes=gson.fromJson(httpResponse.getBody(),PaymentRes.class);
 
             if(paymentRes!=null &&  paymentRes.getUrl()!=null){

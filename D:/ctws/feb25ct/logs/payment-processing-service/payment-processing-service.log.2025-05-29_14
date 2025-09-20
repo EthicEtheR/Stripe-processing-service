@@ -1,0 +1,19 @@
+[INFO ] 2025-05-29 14:27:03.758 [SpringApplicationShutdownHook] [payment-processing-service] org.springframework.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+[INFO ] 2025-05-29 14:27:04.276 [tomcat-shutdown] [payment-processing-service] org.springframework.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
+[INFO ] 2025-05-29 14:29:02.882 [restartedMain] [payment-processing-service] com.hulkhiretech.payments.PaymentProcessingServiceApplication - Starting PaymentProcessingServiceApplication using Java 17.0.15 with PID 5064 (/Users/aethers/Documents/Project/Stripe_proccessing_Service/target/classes started by aethers in /Users/aethers/Documents/Project/Stripe_proccessing_Service)
+[DEBUG] 2025-05-29 14:29:02.883 [restartedMain] [payment-processing-service] com.hulkhiretech.payments.PaymentProcessingServiceApplication - Running with Spring Boot v3.4.2, Spring v6.2.2
+[INFO ] 2025-05-29 14:29:02.883 [restartedMain] [payment-processing-service] com.hulkhiretech.payments.PaymentProcessingServiceApplication - The following 1 profile is active: "local"
+[INFO ] 2025-05-29 14:29:02.901 [restartedMain] [payment-processing-service] org.springframework.boot.devtools.env.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+[INFO ] 2025-05-29 14:29:02.901 [restartedMain] [payment-processing-service] org.springframework.boot.devtools.env.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+[INFO ] 2025-05-29 14:29:03.501 [restartedMain] [payment-processing-service] org.springframework.cloud.context.scope.GenericScope - BeanFactory id=c67a596c-4d26-3905-b340-27cf76499d76
+[INFO ] 2025-05-29 14:29:03.832 [restartedMain] [payment-processing-service] org.springframework.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8082 (http)
+[INFO ] 2025-05-29 14:29:03.837 [restartedMain] [payment-processing-service] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8082"]
+[INFO ] 2025-05-29 14:29:03.838 [restartedMain] [payment-processing-service] org.apache.catalina.core.StandardService - Starting service [Tomcat]
+[INFO ] 2025-05-29 14:29:03.838 [restartedMain] [payment-processing-service] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.34]
+[INFO ] 2025-05-29 14:29:03.863 [restartedMain] [payment-processing-service] org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+[INFO ] 2025-05-29 14:29:03.863 [restartedMain] [payment-processing-service] org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 961 ms
+[INFO ] 2025-05-29 14:29:04.893 [restartedMain] [payment-processing-service] org.springframework.boot.devtools.autoconfigure.OptionalLiveReloadServer - LiveReload server is running on port 35729
+[INFO ] 2025-05-29 14:29:04.923 [restartedMain] [payment-processing-service] org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver - Exposing 26 endpoints beneath base path '/actuator'
+[INFO ] 2025-05-29 14:29:04.961 [restartedMain] [payment-processing-service] org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8082"]
+[INFO ] 2025-05-29 14:29:04.965 [restartedMain] [payment-processing-service] org.springframework.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8082 (http) with context path '/'
+[INFO ] 2025-05-29 14:29:04.985 [restartedMain] [payment-processing-service] com.hulkhiretech.payments.PaymentProcessingServiceApplication - Started PaymentProcessingServiceApplication in 2.343 seconds (process running for 2.753)

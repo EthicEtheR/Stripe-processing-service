@@ -30,7 +30,7 @@
 			<properties>
 				<spring.profiles.active>local</spring.profiles.active>
 				<log4j2.path>
-					D:\\ctws\\feb25ct\\logs\\payment-processing-service</log4j2.path>
+					/Users/aethers/Documents/Project/Logs_processingService</log4j2.path>
 			</properties>
 		</profile>
 		<profile>
@@ -81,9 +81,19 @@
 
 		</dependency>
 
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-tracing</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-tracing-bridge-brave</artifactId>
+		</dependency>
 
 
-		
+
+
+
 		<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-devtools -->
 		<dependency>
 		    <groupId>org.springframework.boot</groupId>
